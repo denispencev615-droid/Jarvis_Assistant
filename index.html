@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JARVIS Assistant</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #07111f;
+      color: #65e6ff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    h1 {
+      letter-spacing: 8px;
+      font-size: 36px;
+    }
+
+    #status {
+      color: #c7eaf3;
+      margin: 20px;
+      min-height: 24px;
+    }
+
+    #answer {
+      color: white;
+      margin: 15px;
+      max-width: 90%;
+    }
+
+    button {
+      background: #0d263a;
+      color: #65e6ff;
+      border: 2px solid #65e6ff;
+      border-radius: 50%;
+      width: 100px;
+      height: 100px;
+      font-size: 38px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    #stop {
+      width: auto;
+      height: auto;
+      margin-top: 20px;
+      padding: 12px 20px;
+      border-radius: 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>J.A.R.V.I.S.</h1>
+  <p>Твоят личен асистент</p>
+
+  <button id="mic" aria-label="Включи микрофона">🎤</button>
+  <p id="status">Натисни микрофона, за да започнем.</p>
+  <p id="answer"></p>
+  <button id="stop">Спри слушането</button>
+
+  <script>
+    const statusText = document.getElementById("status");
+    const answerText = document.getElementById("answer");
+    const micButton = document.getElementById("mic");
+    const stopButton = document.getElementById("stop");
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    let recognition = null;
+    let listeningMode = false;
+    let isRecognizing = false;
+    let isSpeaking = false;
+
+    if (!SpeechRecognition) {
+      statusText.textContent =
+        "Този браузър не поддържа гласово разпознаване. Опитай с Chrome.";
+      micButton.disabled = true;
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.lang = "bg-BG";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isRecognizing = true;
+        statusText.textContent = "Слушам те...";
+        micButton.textContent = "🔴";
+      };
+
+      recognition.onresult = async (event) => {
+        const command = event.results[event.results.length - 1][0]
+          .transcript.trim()
+          .toLowerCase();
+
+        statusText.textContent = "Обработвам командата...";
+        answerText.textContent = "Ти каза: " + command;
+
+        let reply = "Чух те. Кажи ми какво да направя.";
+
+        if (
+          command.includes("spotify") ||
+          command.includes("музика") ||
+          command.includes("пусни песен")
+        ) {
+          reply = "Разбира се! Отварям Spotify.";
+          window.open("https://open.spotify.com/", "_blank");
+        } else if (
+          command.includes("здравей") ||
+          command.includes("здрасти") ||
+          command.includes("джарвис")
+        ) {
+          reply = "Здравей! Слушам те.";
+        } else if (
+          command.includes("спри") ||
+          command.includes("стоп")
+        ) {
+          reply = "Добре. Спирам слушането.";
+          listeningMode = false;
+        }
+
+        await speak(reply);
+
+        if (listeningMode) {
+          statusText.textContent = "Готов съм. Слушам отново...";
+          startListening();
+        } else {
+          statusText.textContent = "Слушането е спряно.";
+        }
+      };
+
+      recognition.onerror = (event) => {
+        isRecognizing = false;
+
+        if (event.error === "not-allowed") {
+          listeningMode = false;
+          statusText.textContent =
+            "Нямам достъп до микрофона. Провери разрешенията на браузъра.";
+        } else if (event.error === "no-speech") {
+          statusText.textContent = "Не чух нищо. Опитай отново.";
+        } else {
+          statusText.textContent = "Грешка: " + event.error;
+        }
+      };
+
+      recognition.onend = () => {
+        isRecognizing = false;
+
+        if (listeningMode && !isSpeaking) {
+          setTimeout(() => {
+            startListening();
+          }, 500);
+        }
+      };
+    }
+
+    function startListening() {
+      if (
+        !recognition ||
+        !listeningMode ||
+        isRecognizing ||
+        isSpeaking
+      ) {
+        return;
+      }
+
+      try {
+        recognition.start();
+      } catch (error) {
+        statusText.textContent = "Подготвям микрофона...";
+      }
+    }
+
+    function speak(text) {
+      return new Promise((resolve) => {
+        isSpeaking = true;
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "bg-BG";
+        utterance.rate = 1;
+        utterance.pitch = 0.9;
+
+        utterance.onend = () => {
+          isSpeaking = false;
+          resolve();
+        };
+
+        utterance.onerror = () => {
+          isSpeaking = false;
+          resolve();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      });
+    }
+
+    micButton.addEventListener("click", () => {
+      if (!recognition) return;
+
+      listeningMode = true;
+      startListening();
+    });
+
+    stopButton.addEventListener("click", () => {
+      listeningMode = false;
+
+      if (recognition && isRecognizing) {
+        recognition.stop();
+      }
+
+      window.speechSynthesis.cancel();
+      statusText.textContent = "Слушането е спряно.";
+      micButton.textContent = "🎤";
+    });
+  </script>
+</body>
+</html>
