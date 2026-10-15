@@ -1,231 +1,298 @@
+
 <!DOCTYPE html>
 <html lang="bg">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JARVIS Assistant</title>
-  <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #07111f;
-      color: #65e6ff;
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
-
-    h1 {
-      letter-spacing: 8px;
-      font-size: 36px;
-    }
-
-    #status {
-      color: #c7eaf3;
-      margin: 20px;
-      min-height: 24px;
-    }
-
-    #answer {
-      color: white;
-      margin: 15px;
-      max-width: 90%;
-    }
-
-    button {
-      background: #0d263a;
-      color: #65e6ff;
-      border: 2px solid #65e6ff;
-      border-radius: 50%;
-      width: 100px;
-      height: 100px;
-      font-size: 38px;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-
-    #stop {
-      width: auto;
-      height: auto;
-      margin-top: 20px;
-      padding: 12px 20px;
-      border-radius: 20px;
-      font-size: 16px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050b12">
+<title>J.A.R.V.I.S. — AI Assistant</title>
+<style>
+:root {
+  --cyan: #65e6ff;
+  --muted: #8da9b8;
+  --panel: rgba(12, 29, 43, .82);
+  --line: rgba(101, 230, 255, .2);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; color: #edfaff;
+  background:
+    radial-gradient(ellipse at 50% 20%, #12354a 0%, transparent 48%),
+    linear-gradient(145deg, #03070c, #081521 60%, #03080e);
+  font-family: Inter, Arial, sans-serif;
+}
+body:before {
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+  background-image: linear-gradient(#65e6ff08 1px, transparent 1px),
+    linear-gradient(90deg, #65e6ff08 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(to bottom, black, transparent 90%);
+}
+.app {
+  position: relative; width: min(100%, 760px);
+  margin: auto; padding: 28px 20px 32px;
+}
+header { display:flex; align-items:center; justify-content:space-between; }
+.brand { letter-spacing: 4px; color: var(--cyan); font-size: 13px; font-weight: 800; }
+.online { color:#8af5c7; font-size:11px; letter-spacing:1px; }
+.online:before { content:""; display:inline-block; width:7px; height:7px;
+  border-radius:50%; background:#65f0bd; margin-right:8px;
+  box-shadow:0 0 12px #65f0bd; }
+.hero { text-align:center; padding:34px 0 22px; }
+h1 { margin:0; font-size:clamp(29px, 7vw, 43px); letter-spacing: .2em;
+  color:#f0fcff; text-shadow:0 0 25px #65e6ff40; }
+.subtitle { margin:12px 0 0; color:var(--muted); font-size:13px; letter-spacing:2px; }
+.reactor {
+  width:190px; height:190px; margin:28px auto 20px; position:relative;
+  display:grid; place-items:center; border-radius:50%;
+}
+.reactor:before,.reactor:after {
+  content:""; position:absolute; inset:0; border-radius:50%;
+  border:1px solid #65e6ff66; box-shadow:0 0 25px #65e6ff13,inset 0 0 25px #65e6ff12;
+}
+.reactor:after { inset:12px; border-style:dashed; animation:spin 24s linear infinite; }
+.ring { position:absolute; inset:-8px; border:1px solid #65e6ff20;
+  border-radius:50%; border-top-color:var(--cyan); animation:spin 8s linear infinite; }
+#mic {
+  width:112px; height:112px; border-radius:50%; cursor:pointer;
+  color:var(--cyan); font-size:43px; border:1px solid #65e6ff99;
+  background:radial-gradient(circle at 50% 35%,#17465b,#071522 72%);
+  box-shadow:0 0 28px #65e6ff24,inset 0 0 22px #65e6ff20;
+  transition:.2s; z-index:1;
+}
+#mic:hover { transform:scale(1.04); box-shadow:0 0 38px #65e6ff55; }
+#mic.listening { animation:pulse 1.5s infinite; background:#143a4b; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes pulse { 50% { box-shadow:0 0 45px #65e6ff88; } }
+#status { min-height:22px; color:var(--cyan); font-size:13px; }
+.hint { color:#718d9e; font-size:12px; margin-top:5px; }
+.panel {
+  border:1px solid var(--line); border-radius:20px; overflow:hidden;
+  background:var(--panel); box-shadow:0 18px 60px #0005;
+  backdrop-filter:blur(14px);
+}
+.panel-head { padding:15px 17px; border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; color:var(--cyan);
+  font-size:11px; letter-spacing:2px; }
+#chat { padding:17px; min-height:105px; max-height:270px; overflow-y:auto; }
+.message { margin:0 0 13px; line-height:1.55; font-size:14px; overflow-wrap:anywhere; }
+.message:last-child { margin-bottom:0; }
+.message .tag { display:block; color:var(--cyan); font-size:10px;
+  letter-spacing:1.5px; margin-bottom:4px; }
+.message.user .tag { color:#c1a9ff; }
+.composer { display:flex; gap:9px; padding:12px; border-top:1px solid var(--line); }
+#command { flex:1; min-width:0; color:white; background:#07131e;
+  border:1px solid #27475a; border-radius:13px; padding:14px;
+  font-size:14px; outline:none; }
+#command:focus { border-color:var(--cyan); }
+#send,#stop {
+  color:#04121a; background:var(--cyan); border:0; border-radius:13px;
+  padding:0 17px; font-weight:800; cursor:pointer;
+}
+#stop { color:var(--cyan); background:#102636; border:1px solid var(--line);
+  padding:11px 16px; }
+.controls { display:flex; justify-content:center; margin-top:12px; }
+.footer { text-align:center; margin-top:24px; color:#526d7d; font-size:10px; letter-spacing:2px; }
+@media(max-width:420px) {
+  .app { padding:22px 14px; }
+  .reactor { width:165px; height:165px; }
+  #mic { width:100px; height:100px; }
+  #send { padding:0 13px; }
+}
+</style>
 </head>
-
 <body>
-  <h1>J.A.R.V.I.S.</h1>
-  <p>Твоят личен асистент</p>
+<main class="app">
+  <header>
+    <div class="brand">J.A.R.V.I.S. / SYSTEM</div>
+    <div class="online">READY</div>
+  </header>
 
-  <button id="mic" aria-label="Включи микрофона">🎤</button>
-  <p id="status">Натисни микрофона, за да започнем.</p>
-  <p id="answer"></p>
-  <button id="stop">Спри слушането</button>
+  <section class="hero">
+    <h1>J.A.R.V.I.S.</h1>
+    <p class="subtitle">ТВОЯТ ЛИЧЕН АСИСТЕНТ</p>
+    <div class="reactor">
+      <div class="ring"></div>
+      <button id="mic" aria-label="Започни гласово управление">🎙</button>
+    </div>
+    <p id="status" aria-live="polite">Системата е готова.</p>
+    <p class="hint">Натисни микрофона или напиши команда долу</p>
+  </section>
 
-  <script>
-    const statusText = document.getElementById("status");
-    const answerText = document.getElementById("answer");
-    const micButton = document.getElementById("mic");
-    const stopButton = document.getElementById("stop");
+  <section class="panel">
+    <div class="panel-head">
+      <span>КОМУНИКАЦИЯ</span><span>BG / AI</span>
+    </div>
+    <div id="chat" aria-live="polite">
+      <p class="message"><span class="tag">J.A.R.V.I.S.</span>Здравей! Готов съм. Можеш да ми говориш или да ми пишеш.</p>
+    </div>
+    <form id="form" class="composer">
+      <input id="command" type="text" placeholder="Напиши команда..." autocomplete="off" aria-label="Напиши команда">
+      <button id="send" type="submit">➤</button>
+    </form>
+  </section>
 
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+  <div class="controls">
+    <button id="stop" type="button">■ Спри слушането</button>
+  </div>
+  <footer class="footer">J.A.R.V.I.S. • PERSONAL ASSISTANT</footer>
+</main>
 
-    let recognition = null;
-    let listeningMode = false;
-    let isRecognizing = false;
-    let isSpeaking = false;
+<script>
+const statusText = document.getElementById("status");
+const micButton = document.getElementById("mic");
+const stopButton = document.getElementById("stop");
+const chat = document.getElementById("chat");
+const form = document.getElementById("form");
+const input = document.getElementById("command");
 
-    if (!SpeechRecognition) {
-      statusText.textContent =
-        "Този браузър не поддържа гласово разпознаване. Опитай с Chrome.";
-      micButton.disabled = true;
-    } else {
-      recognition = new SpeechRecognition();
-      recognition.lang = "bg-BG";
-      recognition.continuous = false;
-      recognition.interimResults = false;
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
 
-      recognition.onstart = () => {
-        isRecognizing = true;
-        statusText.textContent = "Слушам те...";
-        micButton.textContent = "🔴";
-      };
+let recognition = null;
+let listeningMode = false;
+let isRecognizing = false;
+let isSpeaking = false;
 
-      recognition.onresult = async (event) => {
-        const command = event.results[event.results.length - 1][0]
-          .transcript.trim()
-          .toLowerCase();
+function addMessage(who, text) {
+  const p = document.createElement("p");
+  p.className = "message" + (who === "Ти" ? " user" : "");
+  const tag = document.createElement("span");
+  tag.className = "tag";
+  tag.textContent = who.toUpperCase();
+  p.appendChild(tag);
+  p.appendChild(document.createTextNode(text));
+  chat.appendChild(p);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-        statusText.textContent = "Обработвам командата...";
-        answerText.textContent = "Ти каза: " + command;
-
-        let reply = "Чух те. Кажи ми какво да направя.";
-
-        if (
-          command.includes("spotify") ||
-          command.includes("музика") ||
-          command.includes("пусни песен")
-        ) {
-          reply = "Разбира се! Отварям Spotify.";
-          window.open("https://open.spotify.com/", "_blank");
-        } else if (
-          command.includes("здравей") ||
-          command.includes("здрасти") ||
-          command.includes("джарвис")
-        ) {
-          reply = "Здравей! Слушам те.";
-        } else if (
-          command.includes("спри") ||
-          command.includes("стоп")
-        ) {
-          reply = "Добре. Спирам слушането.";
-          listeningMode = false;
-        }
-
-        await speak(reply);
-
-        if (listeningMode) {
-          statusText.textContent = "Готов съм. Слушам отново...";
-          startListening();
-        } else {
-          statusText.textContent = "Слушането е спряно.";
-        }
-      };
-
-      recognition.onerror = (event) => {
-        isRecognizing = false;
-
-        if (event.error === "not-allowed") {
-          listeningMode = false;
-          statusText.textContent =
-            "Нямам достъп до микрофона. Провери разрешенията на браузъра.";
-        } else if (event.error === "no-speech") {
-          statusText.textContent = "Не чух нищо. Опитай отново.";
-        } else {
-          statusText.textContent = "Грешка: " + event.error;
-        }
-      };
-
-      recognition.onend = () => {
-        isRecognizing = false;
-
-        if (listeningMode && !isSpeaking) {
-          setTimeout(() => {
-            startListening();
-          }, 500);
-        }
-      };
+function speak(text) {
+  return new Promise(resolve => {
+    if (!("speechSynthesis" in window)) {
+      resolve();
+      return;
     }
+    isSpeaking = true;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "bg-BG";
+    utterance.rate = 1;
+    utterance.pitch = 0.9;
+    utterance.onend = utterance.onerror = () => {
+      isSpeaking = false;
+      resolve();
+      if (listeningMode) setTimeout(startListening, 500);
+    };
+    window.speechSynthesis.speak(utterance);
+  });
+}
 
-    function startListening() {
-      if (
-        !recognition ||
-        !listeningMode ||
-        isRecognizing ||
-        isSpeaking
-      ) {
-        return;
-      }
+async function handleCommand(raw) {
+  const command = raw.trim().toLowerCase();
+  if (!command) return;
 
-      try {
-        recognition.start();
-      } catch (error) {
-        statusText.textContent = "Подготвям микрофона...";
-      }
-    }
+  addMessage("Ти", raw.trim());
+  statusText.textContent = "Обработвам командата...";
+  input.value = "";
 
-    function speak(text) {
-      return new Promise((resolve) => {
-        isSpeaking = true;
-        window.speechSynthesis.cancel();
+  let reply = "Чух те. Засега нямам команда за това. Можем да ме научим на още действия.";
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "bg-BG";
-        utterance.rate = 1;
-        utterance.pitch = 0.9;
+  if (command.includes("spotify") || command.includes("музика") ||
+      command.includes("пусни песен")) {
+    reply = "Отварям Spotify. Ако не започне музиката автоматично, избери песен.";
+    window.open("https://open.spotify.com/", "_blank", "noopener");
+  } else if (command.includes("колко е часът") ||
+             command.includes("кажи часа")) {
+    reply = "В момента часът е " +
+      new Intl.DateTimeFormat("bg-BG", {hour:"2-digit", minute:"2-digit"}).format(new Date()) + ".";
+  } else if (command.includes("здравей") ||
+             command.includes("здрасти") || command.includes("джарвис")) {
+    reply = "Здравей! Аз съм Джарвис. Слушам те.";
+  } else if (command.includes("помощ") || command.includes("какво можеш")) {
+    reply = "Можеш да ме поздравиш, да попиташ колко е часът или да поискаш да отворя Spotify.";
+  } else if (command.includes("спри") || command.includes("стоп")) {
+    reply = "Добре. Спирам гласовото слушане.";
+    listeningMode = false;
+    if (recognition && isRecognizing) recognition.stop();
+    micButton.classList.remove("listening");
+    micButton.textContent = "🎙";
+  }
 
-        utterance.onend = () => {
-          isSpeaking = false;
-          resolve();
-        };
+  addMessage("J.A.R.V.I.S.", reply);
+  await speak(reply);
+  if (!listeningMode) statusText.textContent = "Системата е готова.";
+}
 
-        utterance.onerror = () => {
-          isSpeaking = false;
-          resolve();
-        };
+if (!SpeechRecognition) {
+  statusText.textContent = "Гласовото разпознаване не се поддържа тук. Използвай полето за писане.";
+  micButton.disabled = true;
+  micButton.style.opacity = ".45";
+} else {
+  recognition = new SpeechRecognition();
+  recognition.lang = "bg-BG";
+  recognition.continuous = false;
+  recognition.interimResults = false;
 
-        window.speechSynthesis.speak(utterance);
-      });
-    }
+  recognition.onstart = () => {
+    isRecognizing = true;
+    statusText.textContent = "Слушам те...";
+    micButton.classList.add("listening");
+    micButton.textContent = "🔴";
+  };
 
-    micButton.addEventListener("click", () => {
-      if (!recognition) return;
+  recognition.onresult = event => {
+    const command = event.results[event.results.length - 1][0].transcript.trim();
+    handleCommand(command);
+  };
 
-      listeningMode = true;
-      startListening();
-    });
-
-    stopButton.addEventListener("click", () => {
+  recognition.onerror = event => {
+    isRecognizing = false;
+    if (event.error === "not-allowed") {
       listeningMode = false;
+      statusText.textContent = "Разреши достъп до микрофона в браузъра.";
+    } else if (event.error === "no-speech") {
+      statusText.textContent = "Не чух нищо. Опитай отново.";
+    } else {
+      statusText.textContent = "Проблем с микрофона: " + event.error;
+    }
+  };
 
-      if (recognition && isRecognizing) {
-        recognition.stop();
-      }
+  recognition.onend = () => {
+    isRecognizing = false;
+    if (listeningMode && !isSpeaking) setTimeout(startListening, 600);
+    else if (!listeningMode) {
+      micButton.classList.remove("listening");
+      micButton.textContent = "🎙";
+    }
+  };
+}
 
-      window.speechSynthesis.cancel();
-      statusText.textContent = "Слушането е спряно.";
-      micButton.textContent = "🎤";
-    });
-  </script>
+function startListening() {
+  if (!recognition || !listeningMode || isRecognizing || isSpeaking) return;
+  try { recognition.start(); }
+  catch (error) { statusText.textContent = "Подготвям микрофона..."; }
+}
+
+micButton.addEventListener("click", () => {
+  if (!recognition) return;
+  listeningMode = true;
+  startListening();
+});
+
+stopButton.addEventListener("click", () => {
+  listeningMode = false;
+  if (recognition && isRecognizing) recognition.stop();
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  isSpeaking = false;
+  statusText.textContent = "Слушането е спряно.";
+  micButton.classList.remove("listening");
+  micButton.textContent = "🎙";
+});
+
+form.addEventListener("submit", event => {
+  event.preventDefault();
+  handleCommand(input.value);
+});
+</script>
 </body>
 </html>
